@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BuildRight Construction | Central CMS Admin Control Panel</title>
+  <meta name="description" content="Central Content Management System (CMS) Admin Dashboard for BuildRight Construction Singapore. Control site text, projects, services, calculator rates, and customer lead inquiries.">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="stylesheet" href="/styles/admin.css">
+  <!-- Favicon Brand Logo -->
+  <link rel="icon" type="image/png" href="/assets/images/brand_logo.png">
+</head>
+<body class="admin-body">
+
+  <!-- Admin Login Overlay Modal (Supabase Auth Protected) -->
+  <div class="admin-login-backdrop" id="admin-login-modal">
+    <div class="admin-login-card glass-panel">
+      <div class="login-header">
+        <img src="./assets/images/brand_logo.png" alt="RK Groups of Construction Logo" class="brand-logo-img">
+        <h2>RK Groups of Construction Admin Portal</h2>
+        <p>Supabase Auth Protected CMS Control Panel</p>
+      </div>
+
+      <form id="admin-login-form" onsubmit="handleAdminLogin(); return false;">
+        <div class="form-group mb-2">
+          <label for="admin-email"><i class="fa-solid fa-envelope"></i> Admin Email</label>
+          <input type="email" id="admin-email" class="form-control" value="rkgrouppteitd@gmail.com" placeholder="rkgrouppteitd@gmail.com" required autofocus>
+        </div>
+        <div class="form-group">
+          <label for="admin-pin"><i class="fa-solid fa-key"></i> Security Password / PIN</label>
+          <input type="password" id="admin-pin" class="form-control" value="Admin1234!" placeholder="Enter Admin Password" required>
+        </div>
+        <button type="submit" class="btn btn-gold btn-block" onclick="handleAdminLogin()">
+          <i class="fa-solid fa-lock-open"></i> Authenticate with Supabase
+        </button>
+        <div class="login-feedback" id="login-feedback"></div>
+      </form>
+      <div class="login-footer-note">
+        <i class="fa-solid fa-shield-halved"></i> Supabase RLS & Authenticated Session Protection
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Admin Layout (Hidden until logged in) -->
+  <div class="admin-layout" id="admin-main-layout" style="display: none;">
+    
+    <!-- Admin Sidebar Navigation -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-header">
+        <img src="./assets/images/brand_logo.png" alt="RK Groups of Construction Logo" class="brand-logo-img">
+        <div class="logo-text">
+          <span class="logo-brand">RK GROUPS OF<br>CONSTRUCTION</span>
+          <span class="logo-sub">CMS CONTROL PANEL</span>
+        </div>
+      </div>
+
+      <nav class="admin-nav">
+        <button class="admin-nav-item active" data-tab="tab-overview">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Dashboard Overview</span>
+        </button>
+        <button class="admin-nav-item" data-tab="tab-hero">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Hero & Site Branding</span>
+        </button>
+        <button class="admin-nav-item" data-tab="tab-projects">
+          <i class="fa-solid fa-building-user"></i>
+          <span>Projects Portfolio</span>
+        </button>
+        <button class="admin-nav-item" data-tab="tab-services">
+          <i class="fa-solid fa-screwdriver-wrench"></i>
+          <span>Core Services</span>
+        </button>
+        <button class="admin-nav-item" data-tab="tab-entities">
+          <i class="fa-solid fa-sitemap"></i>
+          <span>Group Entities</span>
+        </button>
+        <button class="admin-nav-item" data-tab="tab-testimonials">
+          <i class="fa-solid fa-comments"></i>
+          <span>Client Testimonials</span>
+        </button>
+        <button class="admin-nav-item" data-tab="tab-calculator">
+          <i class="fa-solid fa-calculator"></i>
+          <span>Calculator Parameters</span>
+        </button>
+        <button class="admin-nav-item" data-tab="tab-inquiries">
+          <i class="fa-solid fa-inbox"></i>
+          <span>Leads & Inquiries Inbox</span>
+          <span class="inbox-badge" id="sidebar-inbox-count">0</span>
+        </button>
+      </nav>
+
+      <div class="admin-sidebar-footer">
+        <a href="./index.html" target="_blank" class="btn btn-outline btn-block btn-sm">
+          <i class="fa-solid fa-external-link"></i> View Public Website
+        </a>
+        <button class="btn btn-sm btn-outline btn-block" id="btn-change-pin" style="margin-top:0.4rem; color: var(--accent-gold); border-color: var(--accent-gold);">
+          <i class="fa-solid fa-key"></i> Change Security PIN
+        </button>
+        <button class="btn btn-sm btn-block btn-logout" id="btn-logout" style="margin-top:0.4rem;">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout Admin
+        </button>
+      </div>
+    </aside>
+
+    <!-- Admin Main Content Area -->
+    <main class="admin-main">
+      <!-- Admin Top Bar -->
+      <header class="admin-topbar">
+        <div class="admin-topbar-left">
+          <button class="admin-mobile-toggle" id="admin-mobile-toggle" aria-label="Toggle Admin Navigation">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h2 id="current-tab-title">Dashboard Overview</h2>
+          <span class="sync-status-badge"><i class="fa-solid fa-rotate"></i> Real-Time Sync Active</span>
+        </div>
+        <div class="admin-topbar-right">
+          <button class="btn btn-sm btn-gold" id="btn-reset-default" title="Restore Default Data">
+            <i class="fa-solid fa-rotate-left"></i> Restore Default Data
+          </button>
+          <div class="admin-user-profile">
+            <div class="avatar"><i class="fa-solid fa-user-gear"></i></div>
+            <span>Admin Manager</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Admin Tab Content Wrapper -->
+      <div class="admin-content-wrap">
+
+        <!-- 1. TAB: OVERVIEW -->
+        <section class="admin-tab active" id="tab-overview">
+          <div class="admin-stats-cards">
+            <div class="admin-stat-card glass-panel">
+              <div class="icon-box gold"><i class="fa-solid fa-inbox"></i></div>
+              <div class="info">
+                <h3 id="stat-total-inquiries">0</h3>
+                <p>Total Leads Received</p>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-panel">
+              <div class="icon-box blue"><i class="fa-solid fa-city"></i></div>
+              <div class="info">
+                <h3 id="stat-total-projects">6</h3>
+                <p>Active Portfolio Projects</p>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-panel">
+              <div class="icon-box green"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+              <div class="info">
+                <h3 id="stat-total-services">12</h3>
+                <p>Configured Services</p>
+              </div>
+            </div>
+
+            <div class="admin-stat-card glass-panel">
+              <div class="icon-box purple"><i class="fa-solid fa-shield-halved"></i></div>
+              <div class="info">
+                <h3>CW01 A1</h3>
+                <p>BCA Registration Grade</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Shortcuts & Recent Leads -->
+          <div class="overview-grid">
+            <div class="overview-box glass-panel">
+              <h3><i class="fa-solid fa-clock-rotate-left text-gold"></i> Recent Lead Inquiries</h3>
+              <div class="recent-leads-list" id="overview-recent-leads">
+                <p class="text-muted">No leads received yet.</p>
+              </div>
+            </div>
+
+            <div class="overview-box glass-panel">
+              <h3><i class="fa-solid fa-bolt text-gold"></i> Quick Management Actions</h3>
+              <div class="quick-actions-list">
+                <button class="btn btn-outline btn-block switch-tab-btn" data-tab="tab-projects">
+                  <i class="fa-solid fa-plus"></i> Add New Construction Project
+                </button>
+                <button class="btn btn-outline btn-block switch-tab-btn" data-tab="tab-hero">
+                  <i class="fa-solid fa-pen-to-square"></i> Update Hero Headlines & Metrics
+                </button>
+                <button class="btn btn-outline btn-block switch-tab-btn" data-tab="tab-calculator">
+                  <i class="fa-solid fa-sliders"></i> Modify Construction Cost Rates
+                </button>
+                <button class="btn btn-gold btn-block switch-tab-btn" data-tab="tab-inquiries">
+                  <i class="fa-solid fa-table"></i> Export All Leads (CSV)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Security & Password Settings Box -->
+          <div class="overview-box glass-panel" style="margin-top: 1.5rem;">
+            <h3><i class="fa-solid fa-user-shield text-gold"></i> Admin Security & Password Settings</h3>
+            <p class="text-muted" style="font-size: 0.9rem; margin-bottom: 1rem;">
+              Manage your Master Access PIN password. Ensure your password is kept confidential to protect CMS content.
+            </p>
+            <form id="dashboard-change-password-form">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div class="form-group mb-0">
+                  <label style="font-size: 0.85rem;"><i class="fa-solid fa-lock"></i> Current Password / PIN</label>
+                  <input type="password" id="dash-pin-current" class="form-control" placeholder="Current PIN" required>
+                </div>
+                <div class="form-group mb-0">
+                  <label style="font-size: 0.85rem;"><i class="fa-solid fa-key text-gold"></i> New Password / PIN</label>
+                  <input type="password" id="dash-pin-new" class="form-control" placeholder="New PIN (Min 4 chars)" required minlength="4">
+                </div>
+                <div class="form-group mb-0">
+                  <label style="font-size: 0.85rem;"><i class="fa-solid fa-shield-halved text-gold"></i> Confirm New PIN</label>
+                  <input type="password" id="dash-pin-confirm" class="form-control" placeholder="Confirm New PIN" required>
+                </div>
+              </div>
+              <div id="dash-pin-feedback" style="margin-top: 0.8rem; font-weight: 600;"></div>
+              <button type="submit" class="btn btn-gold" style="margin-top: 1rem;">
+                <i class="fa-solid fa-floppy-disk"></i> Save & Update Admin Password
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- 2. TAB: HERO & BRANDING -->
+        <section class="admin-tab" id="tab-hero">
+          <div class="admin-card glass-panel">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-image text-gold"></i> Manage Hero Banner & Branding Info</h3>
+              <button class="btn btn-gold btn-sm" id="save-hero-btn">
+                <i class="fa-solid fa-floppy-disk"></i> Save Hero Changes
+              </button>
+            </div>
+
+            <form id="hero-settings-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Hero Badge Tagline</label>
+                  <input type="text" id="cfg-hero-tag" class="form-control" placeholder="e.g. BUILDING DREAMS • SHAPING SINGAPORE">
+                </div>
+                <div class="form-group">
+                  <label>Company Phone Hotline</label>
+                  <input type="text" id="cfg-phone" class="form-control" placeholder="+65 6123 4567">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Main Hero Headline</label>
+                <input type="text" id="cfg-hero-title" class="form-control" placeholder="BUILDING SINGAPORE BUILDING THE FUTURE">
+              </div>
+
+              <div class="form-group">
+                <label>Hero Subtitle Text</label>
+                <textarea id="cfg-hero-sub" class="form-control" rows="3" placeholder="Delivering high-precision construction solutions..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label><i class="fa-solid fa-file-image text-gold"></i> Hero Background Image (Upload File or Enter Image URL)</label>
+                <input type="text" id="cfg-hero-img" class="form-control" placeholder="./assets/images/hero_singapore_skyline.jpg">
+                <div class="file-upload-wrap mt-2" style="margin-top: 0.8rem;">
+                  <label class="btn btn-sm btn-outline" style="cursor: pointer;">
+                    <i class="fa-solid fa-upload"></i> Upload Hero Image File
+                    <input type="file" id="cfg-hero-file" accept="image/*" style="display: none;">
+                  </label>
+                  <span id="hero-file-name" class="text-muted text-sm ml-2"></span>
+                </div>
+                <div class="img-preview-box mt-2" style="margin-top: 0.8rem;">
+                  <img id="hero-img-preview" src="./assets/images/hero_singapore_skyline.jpg" alt="Hero Background Preview" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                </div>
+              </div>
+
+              <h4 class="mt-4 mb-3 text-gold"><i class="fa-solid fa-chart-line"></i> Hero Live Site Status Card</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Active SG Projects Count</label>
+                  <input type="text" id="cfg-live-projects" class="form-control" placeholder="14 Active Projects Across SG">
+                </div>
+                <div class="form-group">
+                  <label>Safety Rating Record</label>
+                  <input type="text" id="cfg-live-safety" class="form-control" placeholder="100% Zero Accident">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>BCA License Grade Text</label>
+                  <input type="text" id="cfg-live-bca" class="form-control" placeholder="CW01 Grade A1">
+                </div>
+                <div class="form-group">
+                  <label>Avg On-Time Delivery Rate</label>
+                  <input type="text" id="cfg-live-ontime" class="form-control" placeholder="99.4% Delivery">
+                </div>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- 3. TAB: PROJECTS PORTFOLIO -->
+        <section class="admin-tab" id="tab-projects">
+          <!-- Custom Categories Manager Box -->
+          <div class="admin-card glass-panel" style="margin-bottom: 2rem;">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-layer-group text-gold"></i> Custom Project Categories Manager</h3>
+              <button class="btn btn-outline btn-sm" id="btn-add-category">
+                <i class="fa-solid fa-plus"></i> Add Custom Category
+              </button>
+            </div>
+            <div class="categories-tags-wrap" id="admin-categories-list" style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+              <!-- Dynamically Rendered Categories Badges -->
+            </div>
+          </div>
+
+          <div class="admin-card glass-panel">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-building-user text-gold"></i> Manage Projects Portfolio</h3>
+              <button class="btn btn-gold btn-sm" id="btn-add-project">
+                <i class="fa-solid fa-plus"></i> Add New Project
+              </button>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table" id="projects-table">
+                <thead>
+                  <tr>
+                    <th>Preview</th>
+                    <th>Project Name</th>
+                    <th>Category</th>
+                    <th>Location Tag</th>
+                    <th>Specifications</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="projects-table-body">
+                  <!-- Dynamically Rendered -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. TAB: CORE SERVICES -->
+        <section class="admin-tab" id="tab-services">
+          <div class="admin-card glass-panel">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-screwdriver-wrench text-gold"></i> Manage Core Construction Services</h3>
+              <button class="btn btn-gold btn-sm" id="btn-add-service">
+                <i class="fa-solid fa-plus"></i> Add New Service
+              </button>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table" id="services-table">
+                <thead>
+                  <tr>
+                    <th>Icon</th>
+                    <th>Service Title</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="services-table-body">
+                  <!-- Dynamically Rendered -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. TAB: TESTIMONIALS -->
+        <section class="admin-tab" id="tab-testimonials">
+          <div class="admin-card glass-panel">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-comments text-gold"></i> Manage Client Testimonials</h3>
+              <button class="btn btn-gold btn-sm" id="btn-add-testimonial">
+                <i class="fa-solid fa-plus"></i> Add Testimonial
+              </button>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table" id="testimonials-table">
+                <thead>
+                  <tr>
+                    <th>Client Name</th>
+                    <th>Role / Company</th>
+                    <th>Rating</th>
+                    <th>Testimonial Quote</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="testimonials-table-body">
+                  <!-- Dynamically Rendered -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. TAB: CALCULATOR RATES -->
+        <section class="admin-tab" id="tab-calculator">
+          <div class="admin-card glass-panel">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-calculator text-gold"></i> Construction Cost Estimator Parameters</h3>
+              <button class="btn btn-gold btn-sm" id="save-rates-btn">
+                <i class="fa-solid fa-floppy-disk"></i> Save Rate Parameters
+              </button>
+            </div>
+
+            <form id="calc-rates-form">
+              <h4 class="text-gold mb-3">Base Rates Per Sq Ft (SGD)</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Commercial Office Skyscraper Rate ($/sq ft)</label>
+                  <div class="dual-inputs">
+                    <input type="number" id="rate-comm-min" class="form-control" placeholder="Min (e.g. 350)">
+                    <input type="number" id="rate-comm-max" class="form-control" placeholder="Max (e.g. 450)">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Residential Condominium Rate ($/sq ft)</label>
+                  <div class="dual-inputs">
+                    <input type="number" id="rate-res-min" class="form-control" placeholder="Min (e.g. 300)">
+                    <input type="number" id="rate-res-max" class="form-control" placeholder="Max (e.g. 400)">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Civil Engineering & Infra Rate ($/sq ft)</label>
+                  <div class="dual-inputs">
+                    <input type="number" id="rate-civil-min" class="form-control" placeholder="Min (e.g. 480)">
+                    <input type="number" id="rate-civil-max" class="form-control" placeholder="Max (e.g. 620)">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Interior Fit-Out & Renovation Rate ($/sq ft)</label>
+                  <div class="dual-inputs">
+                    <input type="number" id="rate-fitout-min" class="form-control" placeholder="Min (e.g. 140)">
+                    <input type="number" id="rate-fitout-max" class="form-control" placeholder="Max (e.g. 220)">
+                  </div>
+                </div>
+              </div>
+
+              <h4 class="text-gold mt-4 mb-3">Finish Grade Multipliers</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Standard Grade Multiplier</label>
+                  <input type="number" step="0.05" id="mult-standard" class="form-control" placeholder="1.0">
+                </div>
+                <div class="form-group">
+                  <label>Premium Executive Multiplier</label>
+                  <input type="number" step="0.05" id="mult-premium" class="form-control" placeholder="1.25">
+                </div>
+                <div class="form-group">
+                  <label>Ultra Green Mark Champion Multiplier</label>
+                  <input type="number" step="0.05" id="mult-luxury" class="form-control" placeholder="1.55">
+                </div>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- 7. TAB: INQUIRIES & LEADS INBOX -->
+        <section class="admin-tab" id="tab-inquiries">
+          <div class="admin-card glass-panel">
+            <div class="card-title-bar">
+              <h3><i class="fa-solid fa-inbox text-gold"></i> Leads & Customer Inquiries Inbox</h3>
+              <div class="action-flex">
+                <button class="btn btn-gold btn-sm" id="export-csv-btn">
+                  <i class="fa-solid fa-file-csv"></i> Export Leads to CSV
+                </button>
+                <button class="btn btn-outline btn-sm" id="clear-inquiries-btn">
+                  <i class="fa-solid fa-trash-can"></i> Clear Inbox
+                </button>
+              </div>
+            </div>
+
+            <div class="table-search-bar">
+              <input type="text" id="inbox-search-input" class="form-control" placeholder="Search leads by name, email, phone, or project type...">
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table" id="inquiries-table">
+                <thead>
+                  <tr>
+                    <th>Date / Time</th>
+                    <th>Client Name</th>
+                    <th>Contact Info</th>
+                    <th>Project Type / Area</th>
+                    <th>Message / Tender Brief</th>
+                    <th>Source</th>
+                  </tr>
+                </thead>
+                <tbody id="inquiries-table-body">
+                  <!-- Dynamically Rendered -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab 8: Group Entities & Subsidiary Companies Manager -->
+        <section class="admin-tab" id="tab-entities">
+          <div class="admin-card glass-panel">
+            <div class="admin-card-header flex-header">
+              <div>
+                <h2>Group Entities & Subsidiaries Manager</h2>
+                <p>Manage RK Groups of Construction sister companies, roles, descriptions, and key highlights.</p>
+              </div>
+              <button class="btn btn-gold" id="btn-add-entity">
+                <i class="fa-solid fa-plus"></i> Add New Group Entity
+              </button>
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="admin-table" id="entities-table">
+                <thead>
+                  <tr>
+                    <th>Icon</th>
+                    <th>Company Name</th>
+                    <th>Category / Role Tag</th>
+                    <th>Description</th>
+                    <th>Key Highlights</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="entities-table-body">
+                  <!-- Dynamically Rendered -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Reusable Item Edit Modal (Projects / Services / Testimonials) -->
+  <div class="modal-backdrop" id="admin-edit-modal">
+    <div class="modal-dialog glass-panel">
+      <button class="modal-close" id="close-admin-modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-header">
+        <h3 id="admin-modal-title">Edit Item</h3>
+      </div>
+      <div class="modal-body" id="admin-modal-body">
+        <!-- Form injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Toast Notification -->
+  <div class="admin-toast" id="admin-toast"></div>
+
+  <!-- Supabase Client & Configuration -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/supabase-config.js"></script>
+  <!-- JavaScript -->
+  <script src="/js/admin.js"></script>
+</body>
+</html>
